@@ -1,9 +1,8 @@
 package com.andreykan.notification.domain.entities;
 
-import com.andreykan.notification.domain.valueobjects.notification.NotificationChannel;
-import com.andreykan.notification.domain.valueobjects.notification.NotificationId;
-import com.andreykan.notification.domain.valueobjects.notification.NotificationStatus;
-import com.andreykan.notification.domain.valueobjects.notification.Recipient;
+import com.andreykan.notification.domain.valueobjects.notification.*;
+
+import java.time.Instant;
 import java.util.Set;
 
 public class Notification {
@@ -11,5 +10,8 @@ public class Notification {
     private NotificationStatus status;
     private NotificationChannel channel;
     private Recipient recipient;
+    private NotificationTitle title;
+    private NotificationBody body;
     private Set<DeliveryAttempt> deliveryAttempts;
+    private Instant createdAt;
 }
