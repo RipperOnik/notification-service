@@ -12,5 +12,4 @@ public class Notification {
     private NotificationChannel channel;
     private Recipient recipient;
     private Set<DeliveryAttempt> deliveryAttempts;
-    private Set<NotificationEvent> notificationEvents;
 }
