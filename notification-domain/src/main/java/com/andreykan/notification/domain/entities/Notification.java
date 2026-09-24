@@ -7,6 +7,7 @@ import com.andreykan.notification.domain.valueobjects.notification.*;
 
 import java.time.Instant;
 import java.util.*;
+import java.time.Duration;
 
 public class Notification {
     private final NotificationId id;
@@ -17,9 +18,14 @@ public class Notification {
     private final NotificationBody body;
     private final Set<DeliveryAttempt> deliveryAttempts;
     private String providerMessageId;
+    private final RetryPolicy retryPolicy;
     private final Instant createdAt;
     private Instant deliveredAt;
     private Instant failedAt;
+    private Instant nextRetryAt;
+
+    private static final int MAX_ATTEMPTS = 3;
+
 
     public Notification(NotificationChannel channel, Recipient recipient, NotificationTitle title, NotificationBody body) {
         Objects.requireNonNull(recipient, "Recipient should not be null");
@@ -34,6 +40,7 @@ public class Notification {
         this.body = body;
         this.deliveryAttempts = new HashSet<>();
         this.createdAt = Instant.now();
+        this.retryPolicy = new RetryPolicy(MAX_ATTEMPTS, Duration.ofSeconds(30), Duration.ofSeconds(240));
     }
 
     public void queue() {
@@ -75,6 +82,8 @@ public class Notification {
 
         activeDelivery.markSucceeded(deliveredAt);
         this.providerMessageId = providerMessageId;
+
+        nextRetryAt = null;
     }
 
     public void recordDeliveryFailure(DeliveryFailure failure, Instant failedAt) {
@@ -87,19 +96,18 @@ public class Notification {
         var activeDelivery = getActiveDeliveryAttempt().orElseThrow();
         activeDelivery.markFailed(failure, failedAt);
 
-        if(failure.type() == DeliveryFailureType.Permanent || !canRetry())
+        if(failure.type() == DeliveryFailureType.Permanent || !retryPolicy.canRetry(deliveryAttempts.size()))
         {
             status = NotificationStatus.Failed;
             this.failedAt = failedAt;
+            nextRetryAt = null;
 
             return;
         }
 
+        Duration delay = retryPolicy.retryDelay(deliveryAttempts.size());
         status = NotificationStatus.RetryPending;
-    }
-
-    private boolean canRetry() {
-        return deliveryAttempts.size() < 3;
+        nextRetryAt = failedAt.plus(delay);
     }
 
     private Optional<DeliveryAttempt> getActiveDeliveryAttempt() {
@@ -148,5 +156,9 @@ public class Notification {
 
     public NotificationTitle title() {
         return title;
+    }
+
+    public Instant nextRetryAt() {
+        return nextRetryAt;
     }
 }
