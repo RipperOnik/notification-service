@@ -1,10 +1,6 @@
-package com.andreykan.notification.domain.entities;
+package com.andreykan.notification.domain.notification.delivery;
 
-import com.andreykan.notification.domain.exceptions.InvalidStateTransitionException;
-import com.andreykan.notification.domain.valueobjects.deliveryattempt.DeliveryAttemptId;
-import com.andreykan.notification.domain.valueobjects.deliveryattempt.DeliveryAttemptNumber;
-import com.andreykan.notification.domain.valueobjects.deliveryattempt.DeliveryAttemptStatus;
-import com.andreykan.notification.domain.valueobjects.deliveryattempt.DeliveryFailure;
+import com.andreykan.notification.domain.notification.exceptions.InvalidStateTransitionException;
 
 import java.time.Instant;
 import java.util.Objects;

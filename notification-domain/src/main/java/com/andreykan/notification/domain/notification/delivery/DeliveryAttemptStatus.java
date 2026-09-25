@@ -1,4 +1,4 @@
-package com.andreykan.notification.domain.valueobjects.deliveryattempt;
+package com.andreykan.notification.domain.notification.delivery;
 
 public enum DeliveryAttemptStatus {
     Started,

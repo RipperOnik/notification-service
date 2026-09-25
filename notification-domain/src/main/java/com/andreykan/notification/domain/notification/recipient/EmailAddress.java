@@ -1,4 +1,4 @@
-package com.andreykan.notification.domain.valueobjects.notification;
+package com.andreykan.notification.domain.notification.recipient;
 
 public record EmailAddress(String email) {
     public EmailAddress {

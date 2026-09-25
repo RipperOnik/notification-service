@@ -1,4 +1,4 @@
-package com.andreykan.notification.domain.valueobjects.notification;
+package com.andreykan.notification.domain.notification;
 
 public record NotificationTitle(String value) {
     private static final int MAX_LENGTH = 200;

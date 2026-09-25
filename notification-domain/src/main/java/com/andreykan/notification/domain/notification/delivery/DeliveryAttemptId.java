@@ -1,4 +1,4 @@
-package com.andreykan.notification.domain.valueobjects.deliveryattempt;
+package com.andreykan.notification.domain.notification.delivery;
 
 import java.util.Objects;
 import java.util.UUID;

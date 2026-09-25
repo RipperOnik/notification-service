@@ -1,4 +1,4 @@
-package com.andreykan.notification.domain.valueobjects.notification;
+package com.andreykan.notification.domain.notification.retry;
 
 import java.time.Duration;
 
