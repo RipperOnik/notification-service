@@ -1,9 +1,7 @@
 package com.andreykan.notification.domain.notification;
 
-import com.andreykan.notification.domain.notification.delivery.DeliveryAttempt;
+import com.andreykan.notification.domain.notification.delivery.*;
 import com.andreykan.notification.domain.notification.exceptions.InvalidStateTransitionException;
-import com.andreykan.notification.domain.notification.delivery.DeliveryFailure;
-import com.andreykan.notification.domain.notification.delivery.DeliveryFailureType;
 import com.andreykan.notification.domain.notification.recipient.Recipient;
 import com.andreykan.notification.domain.notification.retry.RetryPolicy;
 
@@ -13,6 +11,7 @@ import java.time.Duration;
 
 public class Notification {
     private final NotificationId id;
+    private final IdempotencyKey idempotencyKey;
     private NotificationStatus status;
     private final NotificationChannel channel;
     private final Recipient recipient;
@@ -29,23 +28,27 @@ public class Notification {
     private static final int MAX_ATTEMPTS = 3;
 
 
-    public Notification(NotificationChannel channel, Recipient recipient, NotificationTitle title, NotificationBody body) {
+    public Notification(NotificationId id, IdempotencyKey idempotencyKey, NotificationChannel channel, Recipient recipient, NotificationTitle title, NotificationBody body, Instant createdAt) {
+        Objects.requireNonNull(id, "id should not be null");
+        Objects.requireNonNull(idempotencyKey, "IdempotencyKey should not be null");
         Objects.requireNonNull(recipient, "Recipient should not be null");
         Objects.requireNonNull(title, "Notification title should not be null");
         Objects.requireNonNull(body, "Notification body should not be null");
+        Objects.requireNonNull(createdAt, "Notification createdAt should not be null");
 
-        this.id = NotificationId.generate();
+        this.id = id;
+        this.idempotencyKey = idempotencyKey;
         this.status = NotificationStatus.Created;
         this.channel = channel;
         this.recipient = recipient;
         this.title = title;
         this.body = body;
         this.deliveryAttempts = new HashSet<>();
-        this.createdAt = Instant.now();
+        this.createdAt = createdAt;
         this.retryPolicy = new RetryPolicy(MAX_ATTEMPTS, Duration.ofSeconds(30), Duration.ofSeconds(240));
     }
 
-    public void queue() {
+    public void recordQueued() {
         if(status != NotificationStatus.Created && status != NotificationStatus.RetryPending)
             throw new InvalidStateTransitionException("Notification can only move to Queued status from Created and RetryPending");
 
@@ -62,11 +65,11 @@ public class Notification {
 
         if(activeDelivery.isPresent())
         {
-            deliveryAttempts.add(new DeliveryAttempt(activeDelivery.get().number().value() + 1));
+            deliveryAttempts.add(new DeliveryAttempt(DeliveryAttemptId.generate(), new DeliveryAttemptNumber(activeDelivery.get().number().value() + 1)));
         }
         else
         {
-            deliveryAttempts.add(new DeliveryAttempt());
+            deliveryAttempts.add(new DeliveryAttempt(DeliveryAttemptId.generate()));
         }
     }
 
@@ -119,6 +122,8 @@ public class Notification {
     public NotificationId id() {
         return id;
     }
+
+    public IdempotencyKey idempotencyKey() { return idempotencyKey; }
 
     public NotificationStatus status() {
         return status;

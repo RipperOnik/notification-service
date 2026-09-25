@@ -14,16 +14,18 @@ public class DeliveryAttempt {
     private Instant succeededAt;
     private Instant failedAt;
 
-    public DeliveryAttempt(){
-        this.id = DeliveryAttemptId.generate();
+    public DeliveryAttempt(DeliveryAttemptId id){
+        Objects.requireNonNull(id, "DeliveryAttemptId should not be null");
+        this.id = id;
         this.number = new DeliveryAttemptNumber();
         this.status = DeliveryAttemptStatus.Started;
         this.startedAt = Instant.now();
     }
 
-    public DeliveryAttempt(int number){
-        this.id = DeliveryAttemptId.generate();
-        this.number = new DeliveryAttemptNumber(number);
+    public DeliveryAttempt(DeliveryAttemptId id, DeliveryAttemptNumber number){
+        Objects.requireNonNull(id, "DeliveryAttemptId should not be null");
+        this.id = id;
+        this.number = number;
         this.status = DeliveryAttemptStatus.Started;
         this.startedAt = Instant.now();
     }
