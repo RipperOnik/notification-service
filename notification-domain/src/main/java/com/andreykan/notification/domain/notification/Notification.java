@@ -55,7 +55,7 @@ public class Notification {
         status = NotificationStatus.Queued;
     }
 
-    public void startDeliveryAttempt() {
+    public void startDeliveryAttempt(Instant now) {
         if(status != NotificationStatus.Queued)
             throw new InvalidStateTransitionException("Notification can only move to Processing status from Queued");
 
@@ -65,11 +65,11 @@ public class Notification {
 
         if(activeDelivery.isPresent())
         {
-            deliveryAttempts.add(new DeliveryAttempt(DeliveryAttemptId.generate(), new DeliveryAttemptNumber(activeDelivery.get().number().value() + 1)));
+            deliveryAttempts.add(new DeliveryAttempt(new DeliveryAttemptNumber(activeDelivery.get().number().value() + 1), now));
         }
         else
         {
-            deliveryAttempts.add(new DeliveryAttempt(DeliveryAttemptId.generate()));
+            deliveryAttempts.add(new DeliveryAttempt(now));
         }
     }
 

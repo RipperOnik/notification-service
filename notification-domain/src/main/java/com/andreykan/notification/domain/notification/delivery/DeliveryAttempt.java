@@ -6,28 +6,23 @@ import java.time.Instant;
 import java.util.Objects;
 
 public class DeliveryAttempt {
-    private DeliveryAttemptId id;
-    private DeliveryAttemptNumber number;
+    private final DeliveryAttemptNumber number;
     private DeliveryAttemptStatus status;
     private DeliveryFailure failure;
-    private Instant startedAt;
+    private final Instant startedAt;
     private Instant succeededAt;
     private Instant failedAt;
 
-    public DeliveryAttempt(DeliveryAttemptId id){
-        Objects.requireNonNull(id, "DeliveryAttemptId should not be null");
-        this.id = id;
+    public DeliveryAttempt(Instant now){
         this.number = new DeliveryAttemptNumber();
         this.status = DeliveryAttemptStatus.Started;
-        this.startedAt = Instant.now();
+        this.startedAt = now;
     }
 
-    public DeliveryAttempt(DeliveryAttemptId id, DeliveryAttemptNumber number){
-        Objects.requireNonNull(id, "DeliveryAttemptId should not be null");
-        this.id = id;
+    public DeliveryAttempt(DeliveryAttemptNumber number, Instant now){
         this.number = number;
         this.status = DeliveryAttemptStatus.Started;
-        this.startedAt = Instant.now();
+        this.startedAt = now;
     }
 
     public void markSucceeded(Instant succeededAt) {
@@ -48,10 +43,6 @@ public class DeliveryAttempt {
         status = DeliveryAttemptStatus.Failed;
         this.failure = failure;
         this.failedAt = failedAt;
-    }
-
-    public DeliveryAttemptId id() {
-        return id;
     }
 
     public DeliveryAttemptNumber number(){
