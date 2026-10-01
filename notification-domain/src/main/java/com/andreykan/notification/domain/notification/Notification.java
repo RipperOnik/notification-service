@@ -18,12 +18,11 @@ public class Notification {
     private final NotificationTitle title;
     private final NotificationBody body;
     private final Set<DeliveryAttempt> deliveryAttempts;
-    private String providerMessageId;
     private final RetryPolicy retryPolicy;
     private final Instant createdAt;
     private Instant deliveredAt;
     private Instant failedAt;
-    private Instant nextRetryAt;
+    private Instant readyAt;
 
     private static final int MAX_ATTEMPTS = 3;
 
@@ -85,10 +84,9 @@ public class Notification {
 
         var activeDelivery = getActiveDeliveryAttempt().orElseThrow();
 
-        activeDelivery.markSucceeded(deliveredAt);
-        this.providerMessageId = providerMessageId;
+        activeDelivery.markSucceeded(deliveredAt, providerMessageId);
 
-        nextRetryAt = null;
+        readyAt = null;
     }
 
     public void recordDeliveryFailure(DeliveryFailure failure, Instant failedAt) {
@@ -105,14 +103,14 @@ public class Notification {
         {
             status = NotificationStatus.Failed;
             this.failedAt = failedAt;
-            nextRetryAt = null;
+            readyAt = null;
 
             return;
         }
 
         Duration delay = retryPolicy.retryDelay(deliveryAttempts.size());
         status = NotificationStatus.RetryPending;
-        nextRetryAt = failedAt.plus(delay);
+        readyAt = failedAt.plus(delay);
     }
 
     private Optional<DeliveryAttempt> getActiveDeliveryAttempt() {
@@ -149,10 +147,6 @@ public class Notification {
         return createdAt;
     }
 
-    public String providerMessageId() {
-        return providerMessageId;
-    }
-
     public Set<DeliveryAttempt> deliveryAttempts() {
         return deliveryAttempts;
     }
@@ -165,7 +159,7 @@ public class Notification {
         return title;
     }
 
-    public Instant nextRetryAt() {
-        return nextRetryAt;
+    public Instant readyAt() {
+        return readyAt;
     }
 }

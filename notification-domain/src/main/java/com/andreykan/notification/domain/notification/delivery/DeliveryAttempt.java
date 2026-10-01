@@ -12,6 +12,7 @@ public class DeliveryAttempt {
     private final Instant startedAt;
     private Instant succeededAt;
     private Instant failedAt;
+    private String providerMessageId;
 
     public DeliveryAttempt(Instant now){
         this.number = new DeliveryAttemptNumber();
@@ -25,13 +26,14 @@ public class DeliveryAttempt {
         this.startedAt = now;
     }
 
-    public void markSucceeded(Instant succeededAt) {
+    public void markSucceeded(Instant succeededAt, String providerMessageId) {
         Objects.requireNonNull(succeededAt, "DeliveryAttempt succeededAt should not be null");
 
         if(status != DeliveryAttemptStatus.Started) throw new InvalidStateTransitionException("Cannot move delivery attempt status to Succeeded from Started");
 
         status = DeliveryAttemptStatus.Succeeded;
         this.succeededAt = succeededAt;
+        this.providerMessageId = providerMessageId;
     }
 
     public void markFailed(DeliveryFailure failure, Instant failedAt) {
@@ -67,5 +69,9 @@ public class DeliveryAttempt {
 
     public Instant failedAt(){
         return failedAt;
+    }
+
+    public String providerMessageId() {
+        return providerMessageId;
     }
 }

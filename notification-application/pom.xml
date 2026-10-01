@@ -23,5 +23,11 @@
             <artifactId>notification-domain</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Spring annotations/configuration -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
     </dependencies>
 </project>

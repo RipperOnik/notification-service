@@ -2,13 +2,15 @@ package com.andreykan.notification.application.notification.createnotification;
 
 import com.andreykan.notification.application.notification.NotificationRepository;
 import com.andreykan.notification.domain.notification.*;
-import com.andreykan.notification.domain.notification.recipient.EmailAddress;
+import com.andreykan.notification.domain.notification.recipient.Email;
 import com.andreykan.notification.domain.notification.recipient.Recipient;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+@Service
 class CreateNotificationHandler implements CreateNotificationUseCase {
 
     private final NotificationRepository notificationRepository;
@@ -27,7 +29,7 @@ class CreateNotificationHandler implements CreateNotificationUseCase {
         if(!notificationChannelMap.containsKey(command.channel())) throw new IllegalArgumentException("Channel is invalid");
         var channel = notificationChannelMap.get(command.channel());
 
-        var recipient = new Recipient(new EmailAddress(command.emailAddress()));
+        var recipient = new Recipient(new Email(command.emailAddress()));
         var title = new NotificationTitle(command.title());
         var body = new NotificationBody(command.body());
         var createdAt = Instant.now();
@@ -39,9 +41,7 @@ class CreateNotificationHandler implements CreateNotificationUseCase {
         }
         catch (DuplicateIdempotencyKeyException exception)
         {
-            var existing = notificationRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
-
-            return new CreateNotificationResult(existing.id().value());
+            return new CreateNotificationResult(exception.existingNotificationId().value());
         }
 
         return new CreateNotificationResult(id.value());
