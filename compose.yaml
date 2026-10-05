@@ -77,6 +77,19 @@ services:
 
         echo "DynamoDB initialization complete."
 
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:5.3.4
+    container_name: notification-dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      DYNAMO_ENDPOINT: http://dynamodb:8000
+      AWS_REGION: ca-central-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    depends_on:
+      - dynamodb
+
   notification-web:
     build:
       context: .
