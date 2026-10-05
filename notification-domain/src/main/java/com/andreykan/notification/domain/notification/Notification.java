@@ -23,6 +23,7 @@ public class Notification {
     private Instant deliveredAt;
     private Instant failedAt;
     private Instant readyAt;
+    private Instant queuedAt;
 
     private static final int MAX_ATTEMPTS = 3;
 
@@ -47,11 +48,12 @@ public class Notification {
         this.retryPolicy = new RetryPolicy(MAX_ATTEMPTS, Duration.ofSeconds(30), Duration.ofSeconds(240));
     }
 
-    public void recordQueued() {
+    public void recordQueued(Instant now) {
         if(status != NotificationStatus.Created && status != NotificationStatus.RetryPending)
             throw new InvalidStateTransitionException("Notification can only move to Queued status from Created and RetryPending");
 
         status = NotificationStatus.Queued;
+        queuedAt = now;
     }
 
     public void startDeliveryAttempt(Instant now) {
@@ -162,4 +164,6 @@ public class Notification {
     public Instant readyAt() {
         return readyAt;
     }
+
+    public Instant queuedAt() { return queuedAt; }
 }

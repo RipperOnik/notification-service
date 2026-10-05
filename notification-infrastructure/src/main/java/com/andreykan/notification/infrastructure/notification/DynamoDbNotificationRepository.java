@@ -95,6 +95,11 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
         }
     }
 
+    @Override
+    public Notification[] fetchReadyToDispatch() {
+        return new Notification[0];
+    }
+
     public Optional<NotificationId> findByIdempotencyKey(IdempotencyKey idempotencyKey) {
         Key key = Key.builder()
                 .partitionValue(

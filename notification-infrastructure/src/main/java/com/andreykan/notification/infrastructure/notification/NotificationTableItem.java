@@ -25,6 +25,7 @@ public class NotificationTableItem {
     private Long readyAt;
     private Long failedAt;
     private Long deliveredAt;
+    private Long queuedAt;
 
     // DeliveryAttempt fields
     private Integer attemptNumber;
@@ -217,5 +218,14 @@ public class NotificationTableItem {
 
     public void setSucceededAt(Long succeededAt) {
         this.succeededAt = succeededAt;
+    }
+
+    public Long getQueuedAt() {
+        return queuedAt;
+    }
+
+    @DynamoDbAttribute("QueuedAt")
+    public void setQueuedAt(Long queuedAt) {
+        this.queuedAt = queuedAt;
     }
 }

@@ -77,6 +77,12 @@ public class NotificationItemMapper {
             );
         }
 
+        if (notification.queuedAt() != null) {
+            item.setQueuedAt(
+                    notification.queuedAt().toEpochMilli()
+            );
+        }
+
         return item;
     }
 
