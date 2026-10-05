@@ -19,6 +19,7 @@
         <module>notification-application</module>
         <module>notification-infrastructure</module>
         <module>notification-web</module>
+        <module>notification-dispatcher</module>
     </modules>
     <properties>
         <java.version>26</java.version>

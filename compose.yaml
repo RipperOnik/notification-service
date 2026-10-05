@@ -107,5 +107,13 @@ services:
       dynamo-init:
         condition: service_completed_successfully
 
+  notification-dispatcher:
+    build:
+      context: .
+      dockerfile: notification-dispatcher/Dockerfile
+    container_name: notification-dispatcher
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DISPATCHER_INTERVAL_MS: 5000
 volumes:
   dynamodb-data:

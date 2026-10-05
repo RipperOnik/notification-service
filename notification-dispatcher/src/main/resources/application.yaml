@@ -1,0 +1,11 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  application:
+    name: notification-dispatcher
+app:
+  dynamodb:
+    table-name: Notifications
+dispatcher:
+  interval-ms: ${DISPATCHER_INTERVAL_MS:5000}

@@ -3,9 +3,11 @@ package com.andreykan.notification.application.notification.dispatchnotification
 import com.andreykan.notification.application.notification.NotificationPublisher;
 import com.andreykan.notification.application.notification.NotificationRepository;
 import com.andreykan.notification.domain.notification.Notification;
+import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 
+@Service
 public class DispatchReadyNotificationsHandler implements DispatchReadyNotificationsUseCase{
     private final NotificationRepository notificationRepository;
     private final NotificationPublisher notificationPublisher;
