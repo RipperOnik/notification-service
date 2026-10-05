@@ -2,8 +2,8 @@ services:
   dynamodb:
     image: amazon/dynamodb-local:latest
     container_name: notification-dynamodb
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
 
     working_dir: /home/dynamodblocal
@@ -115,21 +115,42 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
       DISPATCHER_INTERVAL_MS: 5000
+
       AWS_REGION: ca-central-1
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
-      SQS_ENDPOINT: http://localstack:4566
 
-  localstack:
-    image: localstack/localstack:latest
-    container_name: notification-localstack
-    environment:
-      SERVICES: sqs
-      AWS_DEFAULT_REGION: ca-central-1
+      SQS_ENDPOINT: http://elasticmq:9324
+      SQS_DELIVERY_QUEUE_NAME: notification-delivery
+
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+    depends_on:
+      dynamo-init:
+        condition: service_completed_successfully
+      elasticmq:
+        condition: service_started
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.7.1
+    container_name: notification-elasticmq
+
     expose:
-      - "4566"
-    volumes:
-      - localstack-data:/var/lib/localstack
+      - "9324"
 
-volumes:
-  dynamodb-data:
+    volumes:
+      - ./docker/elasticmq/elasticmq.conf:/opt/elasticmq.conf
+
+  elasticmq-ui:
+    image: softwaremill/elasticmq-ui:1.7.1
+    container_name: notification-elasticmq-ui
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      SQS_ENDPOINT: http://elasticmq:9324
+      AWS_REGION: ca-central-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+
+    depends_on:
+      - elasticmq

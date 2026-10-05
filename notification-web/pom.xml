@@ -23,12 +23,12 @@
         </dependency>
         <dependency>
             <groupId>com.andreykan</groupId>
-            <artifactId>notification-application</artifactId>
+            <artifactId>notification-application-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.andreykan</groupId>
-            <artifactId>notification-infrastructure</artifactId>
+            <artifactId>notification-infrastructure-persistance</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>

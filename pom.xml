@@ -16,14 +16,17 @@
     <description>notification-api</description>
     <modules>
         <module>notification-domain</module>
-        <module>notification-application</module>
-        <module>notification-infrastructure</module>
+        <module>notification-application-common</module>
+        <module>notification-infrastructure-persistence</module>
         <module>notification-web</module>
         <module>notification-dispatcher</module>
+        <module>notification-infrastructure-messaging</module>
+        <module>notification-application-api</module>
+        <module>notification-application-dispatcher</module>
     </modules>
     <properties>
         <java.version>26</java.version>
-        <aws.java.sdk.version>2.55.7</aws.java.sdk.version>
+        <aws.java.sdk.version>2.55.8</aws.java.sdk.version>
     </properties>
     <dependencyManagement>
         <dependencies>
