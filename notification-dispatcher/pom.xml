@@ -31,7 +31,7 @@
 
         <dependency>
             <groupId>com.andreykan</groupId>
-            <artifactId>notification-infrastructure-persistance</artifactId>
+            <artifactId>notification-infrastructure-persistence</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>

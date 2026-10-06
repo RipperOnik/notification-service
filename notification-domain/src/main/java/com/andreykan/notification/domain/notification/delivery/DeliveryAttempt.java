@@ -26,6 +26,24 @@ public class DeliveryAttempt {
         this.startedAt = now;
     }
 
+    public DeliveryAttempt(
+            DeliveryAttemptNumber number,
+            DeliveryAttemptStatus status,
+            Instant startedAt,
+            Instant succeededAt,
+            Instant failedAt,
+            DeliveryFailure failure,
+            String providerMessageId
+    ) {
+        this.number = number;
+        this.status = status;
+        this.startedAt = startedAt;
+        this.succeededAt = succeededAt;
+        this.failedAt = failedAt;
+        this.failure = failure;
+        this.providerMessageId = providerMessageId;
+    }
+
     public void markSucceeded(Instant succeededAt, String providerMessageId) {
         Objects.requireNonNull(succeededAt, "DeliveryAttempt succeededAt should not be null");
 
@@ -45,6 +63,26 @@ public class DeliveryAttempt {
         status = DeliveryAttemptStatus.Failed;
         this.failure = failure;
         this.failedAt = failedAt;
+    }
+
+    public static DeliveryAttempt rehydrate(
+            DeliveryAttemptNumber attemptNumber,
+            DeliveryAttemptStatus status,
+            Instant startedAt,
+            Instant succeededAt,
+            Instant failedAt,
+            DeliveryFailure failure,
+            String providerMessageId
+    ) {
+        return new DeliveryAttempt(
+                attemptNumber,
+                status,
+                startedAt,
+                succeededAt,
+                failedAt,
+                failure,
+                providerMessageId
+        );
     }
 
     public DeliveryAttemptNumber number(){

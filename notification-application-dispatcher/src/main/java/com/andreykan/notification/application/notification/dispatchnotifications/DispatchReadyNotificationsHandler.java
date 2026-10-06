@@ -20,7 +20,7 @@ public class DispatchReadyNotificationsHandler implements DispatchReadyNotificat
 
     @Override
     public void dispatchReadyNotifications() {
-        Notification[] readyNotifications = notificationRepository.fetchReadyToDispatch();
+        var readyNotifications = notificationRepository.fetchReadyToDispatch(clock.instant());
 
         for (Notification notification: readyNotifications) {
             notificationPublisher.publish(new DispatchNotificationCommand(notification.id()));

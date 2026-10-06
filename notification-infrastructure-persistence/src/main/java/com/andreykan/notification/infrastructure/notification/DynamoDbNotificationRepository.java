@@ -5,15 +5,17 @@ import com.andreykan.notification.application.notification.NotificationRepositor
 import com.andreykan.notification.domain.notification.IdempotencyKey;
 import com.andreykan.notification.domain.notification.Notification;
 import com.andreykan.notification.domain.notification.NotificationId;
+import com.andreykan.notification.domain.notification.NotificationStatus;
 import org.springframework.stereotype.Repository;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -96,8 +98,98 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
     }
 
     @Override
-    public Notification[] fetchReadyToDispatch() {
-        return new Notification[0];
+    public List<Notification> fetchReadyToDispatch(Instant now) {
+        var index = table.index("status-readyAt-index");
+
+        List<NotificationTableItem> candidates =
+                new ArrayList<>();
+
+        candidates.addAll(
+                queryReadyItems(
+                        index,
+                        NotificationStatus.Created,
+                        now
+                )
+        );
+
+        candidates.addAll(
+                queryReadyItems(
+                        index,
+                        NotificationStatus.RetryPending,
+                        now
+                )
+        );
+
+        return candidates.stream()
+                .map(NotificationTableItem::getNotificationId)
+                .map(UUID::fromString)
+                .map(NotificationId::new)
+                .map(this::findById)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    @Override
+    public Optional<Notification> findById(
+            NotificationId notificationId
+    ) {
+
+        QueryConditional condition =
+                QueryConditional.keyEqualTo(
+                        Key.builder()
+                                .partitionValue(
+                                        NotificationTableKeys
+                                                .notificationPk(notificationId)
+                                )
+                                .build()
+                );
+
+        List<NotificationTableItem> items =
+                new ArrayList<>();
+
+        for (Page<NotificationTableItem> page :
+                table.query(request -> request
+                        .queryConditional(condition)
+                )) {
+
+            items.addAll(page.items());
+        }
+
+        if (items.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(
+                mapper.toDomain(items)
+        );
+    }
+
+    private List<NotificationTableItem> queryReadyItems(
+            DynamoDbIndex<NotificationTableItem> index,
+            NotificationStatus status,
+            Instant now
+    ) {
+
+        QueryConditional condition =
+                QueryConditional.sortLessThanOrEqualTo(
+                        Key.builder()
+                                .partitionValue(status.name())
+                                .sortValue(now.toEpochMilli())
+                                .build()
+                );
+
+        List<NotificationTableItem> result =
+                new ArrayList<>();
+
+        for (Page<NotificationTableItem> page :
+                index.query(request -> request
+                        .queryConditional(condition)
+                )) {
+
+            result.addAll(page.items());
+        }
+
+        return result;
     }
 
     public Optional<NotificationId> findByIdempotencyKey(IdempotencyKey idempotencyKey) {

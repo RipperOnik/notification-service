@@ -8,6 +8,7 @@ import com.andreykan.notification.domain.notification.retry.RetryPolicy;
 import java.time.Instant;
 import java.util.*;
 import java.time.Duration;
+import java.util.stream.Collectors;
 
 public class Notification {
     private final NotificationId id;
@@ -17,7 +18,7 @@ public class Notification {
     private final Recipient recipient;
     private final NotificationTitle title;
     private final NotificationBody body;
-    private final Set<DeliveryAttempt> deliveryAttempts;
+    private Set<DeliveryAttempt> deliveryAttempts;
     private final RetryPolicy retryPolicy;
     private final Instant createdAt;
     private Instant deliveredAt;
@@ -28,7 +29,15 @@ public class Notification {
     private static final int MAX_ATTEMPTS = 3;
 
 
-    public Notification(NotificationId id, IdempotencyKey idempotencyKey, NotificationChannel channel, Recipient recipient, NotificationTitle title, NotificationBody body, Instant createdAt) {
+    public Notification(
+            NotificationId id,
+            IdempotencyKey idempotencyKey,
+            NotificationChannel channel,
+            Recipient recipient,
+            NotificationTitle title,
+            NotificationBody body,
+            Instant createdAt
+    ) {
         Objects.requireNonNull(id, "id should not be null");
         Objects.requireNonNull(idempotencyKey, "IdempotencyKey should not be null");
         Objects.requireNonNull(recipient, "Recipient should not be null");
@@ -45,7 +54,35 @@ public class Notification {
         this.body = body;
         this.deliveryAttempts = new HashSet<>();
         this.createdAt = createdAt;
+        this.readyAt = createdAt;
         this.retryPolicy = new RetryPolicy(MAX_ATTEMPTS, Duration.ofSeconds(30), Duration.ofSeconds(240));
+    }
+
+    public Notification(
+            NotificationId id,
+            IdempotencyKey idempotencyKey,
+            Recipient recipient,
+            NotificationTitle title,
+            NotificationBody body,
+            NotificationChannel channel,
+            NotificationStatus status,
+            Instant createdAt,
+            Instant readyAt,
+            Instant failedAt,
+            Instant deliveredAt,
+            Instant queuedAt,
+            List<DeliveryAttempt> deliveryAttempts
+    ) {
+        this(id, idempotencyKey, channel, recipient, title, body, createdAt);
+        Objects.requireNonNull(status, "Notification status should not be null");
+        Objects.requireNonNull(deliveryAttempts, "Notification deliveryAttempts should not be null");
+
+        this.status = status;
+        this.readyAt = readyAt;
+        this.failedAt = failedAt;
+        this.deliveredAt = deliveredAt;
+        this.queuedAt = queuedAt;
+        this.deliveryAttempts = new HashSet<>(deliveryAttempts);
     }
 
     public void recordQueued(Instant now) {
@@ -117,6 +154,38 @@ public class Notification {
 
     private Optional<DeliveryAttempt> getActiveDeliveryAttempt() {
         return deliveryAttempts.stream().max(Comparator.comparing(da -> da.number().value()));
+    }
+
+    public static Notification rehydrate(
+            NotificationId id,
+            IdempotencyKey idempotencyKey,
+            Recipient recipient,
+            NotificationTitle title,
+            NotificationBody body,
+            NotificationChannel channel,
+            NotificationStatus status,
+            Instant createdAt,
+            Instant readyAt,
+            Instant failedAt,
+            Instant deliveredAt,
+            Instant queuedAt,
+            List<DeliveryAttempt> deliveryAttempts
+    ) {
+        return new Notification(
+                id,
+                idempotencyKey,
+                recipient,
+                title,
+                body,
+                channel,
+                status,
+                createdAt,
+                readyAt,
+                failedAt,
+                deliveredAt,
+                queuedAt,
+                deliveryAttempts
+        );
     }
 
     public NotificationId id() {

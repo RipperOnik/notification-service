@@ -1,9 +1,15 @@
 package com.andreykan.notification.infrastructure.notification;
 
-import com.andreykan.notification.domain.notification.Notification;
-import com.andreykan.notification.domain.notification.NotificationId;
-import com.andreykan.notification.domain.notification.delivery.DeliveryAttempt;
+import com.andreykan.notification.domain.notification.*;
+import com.andreykan.notification.domain.notification.delivery.*;
+import com.andreykan.notification.domain.notification.recipient.Email;
+import com.andreykan.notification.domain.notification.recipient.Recipient;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 public class NotificationItemMapper {
@@ -23,7 +29,7 @@ public class NotificationItemMapper {
                 NotificationTableKeys.notificationSk()
         );
 
-        item.setItemType("NOTIFICATION");
+        item.setItemType(NotificationItemType.NOTIFICATION.name());
 
         item.setNotificationId(
                 notification.id().value().toString()
@@ -104,7 +110,7 @@ public class NotificationItemMapper {
                 )
         );
 
-        item.setItemType("DELIVERY_ATTEMPT");
+        item.setItemType(NotificationItemType.DELIVERY_ATTEMPT.name());
 
         item.setNotificationId(
                 notificationId.value().toString()
@@ -168,7 +174,7 @@ public class NotificationItemMapper {
                 NotificationTableKeys.idempotencySk()
         );
 
-        item.setItemType("IDEMPOTENCY");
+        item.setItemType(NotificationItemType.IDEMPOTENCY.name());
 
         item.setNotificationId(
                 notification.id().value().toString()
@@ -183,5 +189,113 @@ public class NotificationItemMapper {
         );
 
         return item;
+    }
+
+    public Notification toDomain(List<NotificationTableItem> items) {
+
+        NotificationTableItem root = items.stream()
+                .filter(item ->
+                        NotificationItemType.NOTIFICATION.name().equals(item.getItemType()))
+                .findFirst()
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Notification root item is missing"
+                        )
+                );
+
+        List<DeliveryAttempt> attempts = items.stream()
+                .filter(item ->
+                        NotificationItemType.DELIVERY_ATTEMPT.name().equals(item.getItemType())
+                )
+                .sorted(
+                        Comparator.comparingInt(
+                                NotificationTableItem::getAttemptNumber
+                        )
+                )
+                .map(this::toDeliveryAttempt)
+                .toList();
+
+        return Notification.rehydrate(
+                new NotificationId(
+                        UUID.fromString(root.getNotificationId())
+                ),
+
+                new IdempotencyKey(
+                        root.getIdempotencyKey()
+                ),
+
+                new Recipient(
+                        new Email(
+                                root.getRecipientAddress()
+                        )
+                ),
+
+                new NotificationTitle(
+                        root.getSubject()
+                ),
+
+                new NotificationBody(
+                        root.getPayload()
+                ),
+
+                NotificationChannel.valueOf(
+                        root.getChannel()
+                ),
+
+                NotificationStatus.valueOf(
+                        root.getStatus()
+                ),
+
+                Instant.ofEpochMilli(
+                        root.getCreatedAt()
+                ),
+
+                toInstant(root.getReadyAt()),
+                toInstant(root.getFailedAt()),
+                toInstant(root.getDeliveredAt()),
+                toInstant(root.getQueuedAt()),
+                attempts
+        );
+    }
+
+    private DeliveryAttempt toDeliveryAttempt(
+            NotificationTableItem item
+    ) {
+
+        DeliveryFailure failure = null;
+
+        if (item.getFailureType() != null) {
+            failure = new DeliveryFailure(
+                    DeliveryFailureType.valueOf(
+                            item.getFailureType()
+                    ),
+                    item.getFailureReason()
+            );
+        }
+
+        return DeliveryAttempt.rehydrate(
+                new DeliveryAttemptNumber(item.getAttemptNumber()),
+
+                DeliveryAttemptStatus.valueOf(
+                        item.getStatus()
+                ),
+
+                Instant.ofEpochMilli(
+                        item.getStartedAt()
+                ),
+
+                toInstant(item.getSucceededAt()),
+                toInstant(item.getFailedAt()),
+
+                failure,
+
+                item.getProviderMessageId()
+        );
+    }
+
+    private Instant toInstant(Long value) {
+        return value == null
+                ? null
+                : Instant.ofEpochMilli(value);
     }
 }

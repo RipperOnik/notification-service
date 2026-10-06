@@ -10,24 +10,24 @@ public final class NotificationTableKeys {
     public static String notificationPk(
             NotificationId id) {
 
-        return "NOTIFICATION#" + id.value();
+        return NotificationItemType.NOTIFICATION.name() + "#" + id.value();
     }
 
     public static String notificationSk() {
-        return "NOTIFICATION";
+        return NotificationItemType.NOTIFICATION.name();
     }
 
     public static String attemptSk(int number) {
-        return "ATTEMPT#%06d".formatted(number);
+        return NotificationItemType.DELIVERY_ATTEMPT.name() + "#%06d".formatted(number);
     }
 
     public static String idempotencyPk(
             IdempotencyKey key) {
 
-        return "IDEMPOTENCY#" + key.value();
+        return NotificationItemType.IDEMPOTENCY.name() + "#" + key.value();
     }
 
     public static String idempotencySk() {
-        return "IDEMPOTENCY";
+        return NotificationItemType.IDEMPOTENCY.name();
     }
 }
