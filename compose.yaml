@@ -138,6 +138,7 @@ services:
 
     volumes:
       - ./docker/elasticmq/elasticmq.conf:/opt/elasticmq.conf
+      - elasticmq-data:/data
 
   elasticmq-ui:
     image: softwaremill/elasticmq-ui:1.7.1
@@ -154,3 +155,6 @@ services:
 
     depends_on:
       - elasticmq
+
+volumes:
+  elasticmq-data:
