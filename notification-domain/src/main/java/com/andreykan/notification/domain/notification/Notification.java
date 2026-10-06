@@ -8,7 +8,6 @@ import com.andreykan.notification.domain.notification.retry.RetryPolicy;
 import java.time.Instant;
 import java.util.*;
 import java.time.Duration;
-import java.util.stream.Collectors;
 
 public class Notification {
     private final NotificationId id;
@@ -25,6 +24,7 @@ public class Notification {
     private Instant failedAt;
     private Instant readyAt;
     private Instant queuedAt;
+    private long version;
 
     private static final int MAX_ATTEMPTS = 3;
 
@@ -56,6 +56,7 @@ public class Notification {
         this.createdAt = createdAt;
         this.readyAt = createdAt;
         this.retryPolicy = new RetryPolicy(MAX_ATTEMPTS, Duration.ofSeconds(30), Duration.ofSeconds(240));
+        this.version = 0;
     }
 
     public Notification(
@@ -71,7 +72,8 @@ public class Notification {
             Instant failedAt,
             Instant deliveredAt,
             Instant queuedAt,
-            List<DeliveryAttempt> deliveryAttempts
+            List<DeliveryAttempt> deliveryAttempts,
+            long version
     ) {
         this(id, idempotencyKey, channel, recipient, title, body, createdAt);
         Objects.requireNonNull(status, "Notification status should not be null");
@@ -83,6 +85,7 @@ public class Notification {
         this.deliveredAt = deliveredAt;
         this.queuedAt = queuedAt;
         this.deliveryAttempts = new HashSet<>(deliveryAttempts);
+        this.version = version;
     }
 
     public void recordQueued(Instant now) {
@@ -169,7 +172,8 @@ public class Notification {
             Instant failedAt,
             Instant deliveredAt,
             Instant queuedAt,
-            List<DeliveryAttempt> deliveryAttempts
+            List<DeliveryAttempt> deliveryAttempts,
+            long version
     ) {
         return new Notification(
                 id,
@@ -184,7 +188,8 @@ public class Notification {
                 failedAt,
                 deliveredAt,
                 queuedAt,
-                deliveryAttempts
+                deliveryAttempts,
+                version
         );
     }
 
@@ -235,4 +240,12 @@ public class Notification {
     }
 
     public Instant queuedAt() { return queuedAt; }
+
+    public long version() {
+        return version;
+    }
+
+    public void markPersisted(long version) {
+        this.version = version;
+    }
 }

@@ -36,6 +36,8 @@ public class NotificationTableItem {
     private Long startedAt;
     private Long succeededAt;
 
+    private Long version;
+
     @DynamoDbPartitionKey
     @DynamoDbAttribute("PK")
     public String getPk() {
@@ -220,12 +222,21 @@ public class NotificationTableItem {
         this.succeededAt = succeededAt;
     }
 
+    @DynamoDbAttribute("QueuedAt")
     public Long getQueuedAt() {
         return queuedAt;
     }
 
-    @DynamoDbAttribute("QueuedAt")
     public void setQueuedAt(Long queuedAt) {
         this.queuedAt = queuedAt;
+    }
+
+    @DynamoDbAttribute("Version")
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

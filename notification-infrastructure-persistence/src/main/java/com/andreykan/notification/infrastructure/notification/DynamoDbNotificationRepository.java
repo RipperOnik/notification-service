@@ -2,6 +2,7 @@ package com.andreykan.notification.infrastructure.notification;
 
 import com.andreykan.notification.application.notification.DuplicateIdempotencyKeyException;
 import com.andreykan.notification.application.notification.NotificationRepository;
+import com.andreykan.notification.application.notification.OptimisticConcurrencyException;
 import com.andreykan.notification.domain.notification.IdempotencyKey;
 import com.andreykan.notification.domain.notification.Notification;
 import com.andreykan.notification.domain.notification.NotificationId;
@@ -12,13 +13,12 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Repository
 public class DynamoDbNotificationRepository implements NotificationRepository {
@@ -39,11 +39,13 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
 
     @Override
     public void save(Notification notification) {
-        var rootItem =
-                mapper.toNotificationItem(notification);
+        long expectedVersion = notification.version();
+        long nextVersion = expectedVersion + 1;
 
-        var idempotencyItem =
-                mapper.toIdempotencyItem(notification);
+        boolean isNew = expectedVersion == 0;
+
+        var rootItem =
+                mapper.toNotificationItem(notification, nextVersion);
 
         List<NotificationTableItem> attemptItems =
                 notification.deliveryAttempts()
@@ -56,8 +58,8 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
                         )
                         .toList();
 
-        Expression idempotencyCondition =
-                idempotencyCondition(notification);
+        Expression concurrencyCondition =
+                optimisticConcurrencyCondition(expectedVersion);
 
         try {
             enhancedClient.transactWriteItems(transaction -> {
@@ -65,22 +67,39 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
                 // 1. Save aggregate root.
                 transaction.addPutItem(
                         table,
-                        rootItem
-                );
-
-                // 2. Claim / verify idempotency key.
-                transaction.addPutItem(
-                        table,
                         TransactPutItemEnhancedRequest
-                                .builder(
-                                        NotificationTableItem.class
-                                )
-                                .item(idempotencyItem)
-                                .conditionExpression(
-                                        idempotencyCondition
+                                .builder(NotificationTableItem.class)
+                                .item(rootItem)
+                                .conditionExpression(concurrencyCondition)
+                                .returnValuesOnConditionCheckFailure(
+                                        ReturnValuesOnConditionCheckFailure.ALL_OLD
                                 )
                                 .build()
                 );
+
+                // 2. Only claim the idempotency key
+                //    when creating the Notification.
+                if(isNew)
+                {
+                    var idempotencyItem =
+                            mapper.toIdempotencyItem(notification);
+
+                    transaction.addPutItem(
+                            table,
+                            TransactPutItemEnhancedRequest
+                                    .builder(
+                                            NotificationTableItem.class
+                                    )
+                                    .item(idempotencyItem)
+                                    .conditionExpression(
+                                            idempotencyCondition()
+                                    )
+                                    .returnValuesOnConditionCheckFailure(
+                                            ReturnValuesOnConditionCheckFailure.ALL_OLD
+                                    )
+                                    .build()
+                    );
+                }
 
                 // 3. Save all DeliveryAttempt children.
                 for (NotificationTableItem attemptItem
@@ -92,9 +111,57 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
                     );
                 }
             });
+
+            // Only advance the in-memory version AFTER
+            // DynamoDB successfully committed.
+            notification.markPersisted(nextVersion);
+
         } catch (TransactionCanceledException ex) {
             handleTransactionFailure(notification, ex);
         }
+    }
+
+    private Expression optimisticConcurrencyCondition(
+            long expectedVersion
+    ) {
+        if (expectedVersion == 0) {
+
+            return Expression.builder()
+                    .expression(
+                            "attribute_not_exists(#pk)"
+                    )
+                    .expressionNames(
+                            Map.of(
+                                    "#pk",
+                                    "PK"
+                            )
+                    )
+                    .build();
+        }
+
+        return Expression.builder()
+                .expression(
+                        "#version = :expectedVersion"
+                )
+                .expressionNames(
+                        Map.of(
+                                "#version",
+                                "Version"
+                        )
+                )
+                .expressionValues(
+                        Map.of(
+                                ":expectedVersion",
+                                AttributeValue.builder()
+                                        .n(
+                                                Long.toString(
+                                                        expectedVersion
+                                                )
+                                        )
+                                        .build()
+                        )
+                )
+                .build();
     }
 
     @Override
@@ -222,28 +289,16 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
         );
     }
 
-    private Expression idempotencyCondition(
-            Notification notification) {
+    private Expression idempotencyCondition() {
 
         return Expression.builder()
                 .expression(
-                        "attribute_not_exists(#pk) "
-                                + "OR #notificationId = :notificationId"
+                        "attribute_not_exists(#pk)"
                 )
-                .putExpressionName(
-                        "#pk",
-                        "PK"
-                )
-                .putExpressionName(
-                        "#notificationId",
-                        "NotificationId"
-                )
-                .putExpressionValue(
-                        ":notificationId",
-                        AttributeValue.fromS(
-                                notification.id()
-                                        .value()
-                                        .toString()
+                .expressionNames(
+                        Map.of(
+                                "#pk",
+                                "PK"
                         )
                 )
                 .build();
@@ -253,20 +308,79 @@ public class DynamoDbNotificationRepository implements NotificationRepository {
             Notification notification,
             TransactionCanceledException exception) {
 
-        Optional<NotificationId> existingOwner =
-                findByIdempotencyKey(
-                        notification.idempotencyKey()
+        for(CancellationReason reason: exception.cancellationReasons()) {
+            if (!"ConditionalCheckFailed".equals(reason.code())) {
+                continue;
+            }
+
+            if(!reason.hasItem()) {
+                continue;
+            }
+
+            Map<String, AttributeValue> item = reason.item();
+
+            String itemType = getString(item, "ItemType");
+
+            if (NotificationItemType.NOTIFICATION.name().equals(itemType)) {
+                long actualVersion =
+                        getLong(item, "Version");
+
+                throw new OptimisticConcurrencyException(
+                        notification.id(),
+                        notification.version(),
+                        actualVersion
                 );
+            }
 
-        if (existingOwner.isPresent()
-                && !existingOwner.get()
-                .equals(notification.id())) {
+            if (NotificationItemType.IDEMPOTENCY.name().equals(itemType)) {
 
-            throw new DuplicateIdempotencyKeyException(
-                    existingOwner.get()
+                String existingNotificationId =
+                        getString(
+                                item,
+                                "NotificationId"
+                        );
+
+                throw new DuplicateIdempotencyKeyException(
+                        new NotificationId(
+                                UUID.fromString(
+                                        existingNotificationId
+                                )
+                        )
+                );
+            }
+        }
+
+        // We couldn't safely translate it.
+        throw exception;
+    }
+
+    private String getString(
+            Map<String, AttributeValue> item,
+            String attribute
+    ) {
+        AttributeValue value = item.get(attribute);
+
+        if (value == null || value.s() == null) {
+            throw new IllegalStateException(
+                    "Missing DynamoDB attribute: " + attribute
             );
         }
 
-        throw exception;
+        return value.s();
+    }
+
+    private long getLong(
+            Map<String, AttributeValue> item,
+            String attribute
+    ) {
+        AttributeValue value = item.get(attribute);
+
+        if (value == null || value.n() == null) {
+            throw new IllegalStateException(
+                    "Missing DynamoDB attribute: " + attribute
+            );
+        }
+
+        return Long.parseLong(value.n());
     }
 }

@@ -15,7 +15,7 @@ import java.util.UUID;
 public class NotificationItemMapper {
 
     public NotificationTableItem toNotificationItem(
-            Notification notification) {
+            Notification notification, long nextVersion) {
 
         var item = new NotificationTableItem();
 
@@ -88,6 +88,8 @@ public class NotificationItemMapper {
                     notification.queuedAt().toEpochMilli()
             );
         }
+
+        item.setVersion(nextVersion);
 
         return item;
     }
@@ -254,7 +256,8 @@ public class NotificationItemMapper {
                 toInstant(root.getFailedAt()),
                 toInstant(root.getDeliveredAt()),
                 toInstant(root.getQueuedAt()),
-                attempts
+                attempts,
+                root.getVersion()
         );
     }
 
