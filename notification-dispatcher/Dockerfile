@@ -27,6 +27,9 @@ COPY notification-infrastructure-persistence/pom.xml \
 COPY notification-infrastructure-messaging/pom.xml \
      notification-infrastructure-messaging/pom.xml
 
+COPY notification-infrastructure-observability/pom.xml \
+     notification-infrastructure-observability/pom.xml
+
 COPY notification-web/pom.xml \
      notification-web/pom.xml
 
@@ -61,6 +64,9 @@ COPY notification-infrastructure-persistence/src \
 
 COPY notification-infrastructure-messaging/src \
      notification-infrastructure-messaging/src
+
+COPY notification-infrastructure-observability/src \
+     notification-infrastructure-observability/src
 
 COPY notification-dispatcher/src \
      notification-dispatcher/src

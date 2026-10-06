@@ -1,5 +1,6 @@
 package com.andreykan.notification.application.notification.createnotification;
 
+import com.andreykan.notification.application.logging.LogExecution;
 import com.andreykan.notification.application.notification.DuplicateIdempotencyKeyException;
 import com.andreykan.notification.application.notification.NotificationRepository;
 import com.andreykan.notification.domain.notification.*;
@@ -22,6 +23,7 @@ class CreateNotificationHandler implements CreateNotificationUseCase {
         notificationChannelMap = new HashMap<>(Map.of("email", NotificationChannel.Email));
     }
 
+    @LogExecution("create-notification")
     @Override
     public CreateNotificationResult execute(CreateNotificationCommand command) {
         var id = NotificationId.generate();

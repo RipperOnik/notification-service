@@ -23,6 +23,7 @@
         <module>notification-infrastructure-messaging</module>
         <module>notification-application-api</module>
         <module>notification-application-dispatcher</module>
+        <module>notification-infrastructure-observability</module>
     </modules>
     <properties>
         <java.version>26</java.version>

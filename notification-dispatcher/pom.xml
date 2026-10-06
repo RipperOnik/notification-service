@@ -42,6 +42,13 @@
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.andreykan</groupId>
+            <artifactId>notification-infrastructure-observability</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

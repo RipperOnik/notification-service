@@ -1,10 +1,12 @@
 package com.andreykan.notification.application.notification.dispatchnotifications;
 
+import com.andreykan.notification.application.logging.LogExecution;
 import com.andreykan.notification.application.notification.NotificationRepository;
 import com.andreykan.notification.domain.notification.Notification;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Instant;
 
 @Service
 public class DispatchReadyNotificationsHandler implements DispatchReadyNotificationsUseCase{
@@ -19,13 +21,15 @@ public class DispatchReadyNotificationsHandler implements DispatchReadyNotificat
     }
 
     @Override
+    @LogExecution("dispatch-ready-notifications")
     public void dispatchReadyNotifications() {
-        var readyNotifications = notificationRepository.fetchReadyToDispatch(clock.instant());
+        Instant now = clock.instant();
+        var readyNotifications = notificationRepository.fetchReadyToDispatch(now);
 
         for (Notification notification: readyNotifications) {
             notificationPublisher.publish(new DispatchNotificationCommand(notification.id()));
 
-            notification.recordQueued(clock.instant());
+            notification.recordQueued(now);
 
             notificationRepository.save(notification);
         }
