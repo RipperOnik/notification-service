@@ -1,0 +1,14 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  application:
+    name: notification-worker
+
+app:
+  dynamodb:
+    table-name: Notifications
+  sqs:
+    delivery-queue-name: ${SQS_DELIVERY_QUEUE_NAME:notification-delivery}
+  email:
+    from-address: ${EMAIL_FROM_ADDRESS}

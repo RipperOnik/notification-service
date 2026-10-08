@@ -8,7 +8,6 @@ import com.andreykan.notification.domain.notification.NotificationId;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
-import java.time.Instant;
 
 @Service
 public class DeliverNotificationHandler implements DeliverNotificationUseCase {
@@ -16,7 +15,11 @@ public class DeliverNotificationHandler implements DeliverNotificationUseCase {
     private final EmailClient emailClient;
     private final Clock clock;
 
-    public DeliverNotificationHandler(NotificationRepository notificationRepository, EmailClient emailClient, Clock clock) {
+    public DeliverNotificationHandler(
+            NotificationRepository notificationRepository,
+            EmailClient emailClient,
+            Clock clock
+            ) {
         this.notificationRepository = notificationRepository;
         this.emailClient = emailClient;
         this.clock = clock;
@@ -25,18 +28,16 @@ public class DeliverNotificationHandler implements DeliverNotificationUseCase {
     @LogExecution("deliver-notification")
     @Override
     public void execute(DeliverNotificationCommand command) {
-        Instant now = clock.instant();
-
         Notification notification = notificationRepository.findById(new NotificationId(command.notificationId())).orElseThrow();
 
-        notification.startDeliveryAttempt(now);
+        notification.startDeliveryAttempt(clock.instant());
         notificationRepository.save(notification);
 
         try {
             SendEmailRequest request =
-                    new SendEmailRequest(notification.title().value(), notification.body().value(), "test@test.com", notification.recipient().email().value());
+                    new SendEmailRequest(notification.title().value(), notification.body().value(), notification.recipient().email().value());
             SendEmailConfirmation confirmation = emailClient.send(request);
-            notification.recordDeliverySuccess(confirmation.providerMessageId(), confirmation.deliveredAt());
+            notification.recordDeliverySuccess(confirmation.providerMessageId(), clock.instant());
         }
         catch (SendEmailException ex) {
             notification.recordDeliveryFailure(ex.failure(), ex.failureAt());

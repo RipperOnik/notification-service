@@ -18,19 +18,21 @@
         <module>notification-domain</module>
         <module>notification-application-common</module>
         <module>notification-infrastructure-persistence</module>
-        <module>notification-web</module>
-        <module>notification-dispatcher</module>
-        <module>notification-infrastructure-messaging</module>
+        <module>notification-presentation-web</module>
+        <module>notification-presentation-dispatcher</module>
+        <module>notification-infrastructure-messaging-publisher</module>
         <module>notification-application-api</module>
         <module>notification-application-dispatcher</module>
         <module>notification-infrastructure-observability</module>
         <module>notification-application-worker</module>
-        <module>notification-worker</module>
+        <module>notification-presentation-worker</module>
+        <module>notification-infrastructure-email</module>
+        <module>notification-infrastructure-messaging-listener</module>
     </modules>
     <properties>
         <java.version>26</java.version>
         <aws.java.sdk.version>2.55.8</aws.java.sdk.version>
-        <spring-cloud-aws.version>4.0.0</spring-cloud-aws.version>
+        <spring-cloud-aws.version>4.1.1</spring-cloud-aws.version>
     </properties>
     <dependencyManagement>
         <dependencies>

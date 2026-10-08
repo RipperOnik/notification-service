@@ -93,7 +93,7 @@ services:
   notification-web:
     build:
       context: .
-      dockerfile: notification-web/Dockerfile
+      dockerfile: notification-presentation-web/Dockerfile
     container_name: notification-web
     ports:
       - "8080:8080"
@@ -110,7 +110,7 @@ services:
   notification-dispatcher:
     build:
       context: .
-      dockerfile: notification-dispatcher/Dockerfile
+      dockerfile: notification-presentation-dispatcher/Dockerfile
     container_name: notification-dispatcher
     environment:
       SPRING_PROFILES_ACTIVE: local
@@ -156,5 +156,27 @@ services:
     depends_on:
       - elasticmq
 
+  notification-worker:
+    build:
+      context: .
+      dockerfile: notification-presentation-worker/Dockerfile
+    container_name: notification-worker
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+
+      AWS_REGION: ca-central-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+
+      SQS_ENDPOINT: http://elasticmq:9324
+      SQS_DELIVERY_QUEUE_NAME: notification-delivery
+
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+
+      EMAIL_FROM_ADDRESS: sender@test.com
+
+    depends_on:
+      dynamo-init:
+        condition: service_completed_successfully
 volumes:
   elasticmq-data:

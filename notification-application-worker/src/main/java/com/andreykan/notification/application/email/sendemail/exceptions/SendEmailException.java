@@ -8,8 +8,8 @@ public class SendEmailException extends RuntimeException {
     private final DeliveryFailure failure;
     private final Instant failureAt;
 
-    public SendEmailException(String message, Exception ex, DeliveryFailure failure, Instant failureAt) {
-        super(message, ex);
+    public SendEmailException(Exception ex, DeliveryFailure failure, Instant failureAt) {
+        super(ex);
         this.failure = failure;
         this.failureAt = failureAt;
     }

@@ -1,0 +1,15 @@
+app:
+  dynamodb:
+    endpoint: ${DYNAMODB_ENDPOINT:http://dynamodb:8000}
+  sqs:
+    endpoint: ${SQS_ENDPOINT:http://elasticmq:9324}
+    delivery-queue-name: ${SQS_DELIVERY_QUEUE_NAME:notification-delivery}
+aws:
+  region: ${AWS_REGION:ca-central-1}
+  access-key: ${AWS_ACCESS_KEY_ID:local}
+  secret-key: ${AWS_SECRET_ACCESS_KEY:local}
+
+logging:
+  level:
+    root: INFO
+    com.andreykan.notification: DEBUG
