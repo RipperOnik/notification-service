@@ -24,10 +24,13 @@
         <module>notification-application-api</module>
         <module>notification-application-dispatcher</module>
         <module>notification-infrastructure-observability</module>
+        <module>notification-application-worker</module>
+        <module>notification-worker</module>
     </modules>
     <properties>
         <java.version>26</java.version>
         <aws.java.sdk.version>2.55.8</aws.java.sdk.version>
+        <spring-cloud-aws.version>4.0.0</spring-cloud-aws.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -35,6 +38,14 @@
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
                 <version>${aws.java.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.awspring.cloud</groupId>
+                <artifactId>spring-cloud-aws-dependencies</artifactId>
+                <version>${spring-cloud-aws.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
